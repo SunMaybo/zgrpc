@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"zgrpc/apis/apis/zgrpc/config"
-	"zgrpc/apis/apis/zgrpc/server"
-	"zgrpc/apis/apis/zgrpc/svc"
+	"github.com/SunMaybo/zgrpc/config"
+	"github.com/SunMaybo/zgrpc/server"
+	"github.com/SunMaybo/zgrpc/svc"
 )
 
 // 设置路由信息

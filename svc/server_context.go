@@ -2,12 +2,12 @@ package svc
 
 import (
 	"github.com/SunMaybo/zero/common/zlog"
+	"github.com/SunMaybo/zgrpc/config"
+	"github.com/SunMaybo/zgrpc/grpcurl"
 	"github.com/boltdb/bolt"
 	"log"
 	"os"
 	"os/user"
-	"zgrpc/apis/apis/zgrpc/config"
-	"zgrpc/apis/apis/zgrpc/grpcurl"
 )
 
 type ServiceContext struct {

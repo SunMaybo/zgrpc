@@ -7,6 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/SunMaybo/zero/common/zgin"
+	"github.com/SunMaybo/zgrpc/dto"
+	"github.com/SunMaybo/zgrpc/grpcurl"
+	"github.com/SunMaybo/zgrpc/static"
+	"github.com/SunMaybo/zgrpc/svc"
 	"github.com/boltdb/bolt"
 	grpcurl2 "github.com/fullstorydev/grpcurl"
 	"github.com/gin-gonic/gin"
@@ -17,10 +21,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"zgrpc/apis/apis/zgrpc/dto"
-	"zgrpc/apis/apis/zgrpc/grpcurl"
-	"zgrpc/apis/apis/zgrpc/static"
-	"zgrpc/apis/apis/zgrpc/svc"
 )
 
 type Server struct {

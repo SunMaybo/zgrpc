@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/SunMaybo/zero/common/zlog"
+	"github.com/SunMaybo/zgrpc/dto"
 	"github.com/jhump/protoreflect/desc/protoprint"
 	"io"
 	"math"
@@ -16,7 +17,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"zgrpc/apis/apis/zgrpc/dto"
 
 	"github.com/fullstorydev/grpcurl"
 	"github.com/golang/protobuf/jsonpb" //lint:ignore SA1019 we have to import this because it appears in grpcurl APIs used herein
