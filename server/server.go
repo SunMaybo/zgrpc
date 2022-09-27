@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/SunMaybo/zero/common/zgin"
+	"github.com/SunMaybo/zero/common/zlog"
 	"github.com/SunMaybo/zgrpc/dto"
 	"github.com/SunMaybo/zgrpc/grpcurl"
 	"github.com/SunMaybo/zgrpc/static"
@@ -14,9 +15,12 @@ import (
 	"github.com/boltdb/bolt"
 	grpcurl2 "github.com/fullstorydev/grpcurl"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/browser"
+	"github.com/satori/go.uuid"
 	"net/http"
 	"os"
+	"os/user"
 	"sort"
 	"strings"
 	"sync"
@@ -42,6 +46,9 @@ func NewServer(svc *svc.ServiceContext) *Server {
 }
 
 func (s *Server) Start() {
+	for _, method := range s.svcCtx.GrpcSession.Methods {
+		saveMetrics(s.svcCtx.TaskDB, s.svcCtx.Cfg.Feature, method.GetService().GetFullyQualifiedName(), method.GetName(), 0)
+	}
 	if err := browser.OpenURL("http://127.0.0.1:" + fmt.Sprintf("%d", s.svcCtx.Cfg.Zero.Server.Port)); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to open browser: %v\n", err)
 	}
@@ -147,6 +154,9 @@ func (s *Server) Start() {
 				"request":      results,
 			})
 		}))
+		engine.GET("/api/metrics", s.server.MiddleHandle(func(ctx context.Context, ginCtx *gin.Context) {
+			ginCtx.JSON(200, findMetricsByFeature(s.svcCtx.TaskDB, s.svcCtx.Cfg.Feature))
+		}))
 		engine.POST("/api/invoke", s.server.MiddleHandle(func(ctx context.Context, ginCtx *gin.Context) {
 			start := time.Now()
 			lock := sync.RWMutex{}
@@ -235,7 +245,50 @@ func (s *Server) Start() {
 				}
 				return nil
 			})
+			go func(db *gorm.DB, feature, serviceName, method string, status int) {
+				if status == 0 {
+					status = 2
+				}
+				saveMetrics(db, feature, serviceName, method, status)
+			}(s.svcCtx.TaskDB, s.svcCtx.Cfg.Target, request.ServiceName, method, invokeResp.Status)
 			ginCtx.JSON(200, invokeResp)
 		}))
 	})
+}
+
+func saveMetrics(db *gorm.DB, feature, serviceName, method string, status int) {
+	uid := uuid.NewV4()
+	id := uid.String()
+	if user, err := user.Current(); err != nil {
+		zlog.S.Fatal(err)
+	} else {
+		db.Exec("INSERT INTO `grpc_metrics` ( `id`, `method`, `author`, `status`, `feature`,`created_at`,`updated_at` ) VALUES (?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `status`=?,updated_at=?",
+			id, serviceName+":"+method, user.Username, status, feature, time.Now(), time.Now(), status, time.Now(),
+		)
+	}
+}
+
+func findMetricsByFeature(db *gorm.DB, feature string) []Metrics {
+	rows, err := db.Raw("select id,author,method,feature,status,created_at,updated_at from grpc_metrics where feature=?", feature).Rows()
+	if err != nil {
+		return nil
+	}
+	var metrics []Metrics
+	defer rows.Close()
+	for rows.Next() {
+		metric := Metrics{}
+		rows.Scan(&metric.Id, &metric.Author, &metric.Method, &metric.Feature, &metric.Status, &metric.CreatedAt, &metric.UpdatedAt)
+		metrics = append(metrics, metric)
+	}
+	return metrics
+}
+
+type Metrics struct {
+	Id        string    `json:"id"`
+	Author    string    `json:"author"`
+	Method    string    `json:"method"`
+	Status    int       `json:"status"`
+	Feature   string    `json:"feature"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
