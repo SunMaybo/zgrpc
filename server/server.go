@@ -278,6 +278,9 @@ func findMetricsByFeature(db *gorm.DB, feature string) []Metrics {
 	for rows.Next() {
 		metric := Metrics{}
 		rows.Scan(&metric.Id, &metric.Author, &metric.Method, &metric.Feature, &metric.Status, &metric.CreatedAt, &metric.UpdatedAt)
+		if strings.Contains(metric.Method, "ChewService") || strings.Contains(metric.Method, "Health") || strings.Contains(metric.Method, "ServerReflection") {
+			continue
+		}
 		metrics = append(metrics, metric)
 	}
 	return metrics
